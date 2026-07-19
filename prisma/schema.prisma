@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  WARDEN
+  STAFF
+  ADMIN
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  DORMITORY
+}
+
+enum AllocationStatus {
+  ACTIVE
+  ENDED
+  TRANSFERRED
+}
+
+enum StaffSpecialty {
+  ELECTRICAL
+  PLUMBING
+  CLEANING
+  CARPENTRY
+  GENERAL
+  LAUNDRY
+}
+
+enum ComplaintCategory {
+  ELECTRICAL
+  PLUMBING
+  CLEANING
+  WIFI
+  FURNITURE
+  SECURITY
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REOPENED
+}
+
+enum VisitorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LaundryStatus {
+  BOOKED
+  IN_PROGRESS
+  READY
+  COLLECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+}
+
+enum PaymentType {
+  ROOM_RENT
+  MESS_FEE
+  SECURITY_DEPOSIT
+  FINE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  REFUNDED
+}
+
+enum NotificationType {
+  COMPLAINT
+  VISITOR
+  LAUNDRY
+  PAYMENT
+  NOTICE
+  SOS
+  SYSTEM
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  firstName    String
+  lastName     String
+  phone        String?
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student       Student?
+  warden        Warden?
+  staff         Staff?
+  notifications Notification[]
+  auditLogs     AuditLog[]
+}
+
+model Hostel {
+  id         String   @id @default(uuid())
+  name       String
+  address    String
+  totalRooms Int
+  wardens    Warden[]
+  rooms      Room[]
+}
+
+model Room {
+  id          String           @id @default(uuid())
+  hostelId    String
+  hostel      Hostel           @relation(fields: [hostelId], references: [id])
+  roomNumber  String
+  floor       Int
+  capacity    Int
+  occupied    Int              @default(0)
+  type        RoomType
+  monthlyRent Decimal
+  allocations RoomAllocation[]
+  complaints  Complaint[]
+
+  @@unique([hostelId, roomNumber])
+}
+
+model Student {
+  id              String           @id @default(uuid())
+  userId          String           @unique
+  user            User             @relation(fields: [userId], references: [id])
+  studentCode     String           @unique
+  course          String
+  year            Int
+  guardianName    String
+  guardianPhone   String
+  allocations     RoomAllocation[]
+  complaints      Complaint[]
+  visitors        Visitor[]
+  laundryBookings Laundry[]
+  attendance      Attendance[]
+  payments        Payment[]
+}
+
+model RoomAllocation {
+  id        String           @id @default(uuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id])
+  roomId    String
+  room      Room             @relation(fields: [roomId], references: [id])
+  bedNumber Int
+  startDate DateTime
+  endDate   DateTime?
+  status    AllocationStatus @default(ACTIVE)
+}
+
+model Warden {
+  id                 String      @id @default(uuid())
+  userId             String      @unique
+  user               User        @relation(fields: [userId], references: [id])
+  hostelId           String
+  hostel             Hostel      @relation(fields: [hostelId], references: [id])
+  assignedComplaints Complaint[] @relation("WardenAssignments")
+}
+
+model Staff {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  user         User           @relation(fields: [userId], references: [id])
+  specialty    StaffSpecialty
+  tasks        Complaint[]    @relation("StaffAssignments")
+  laundryTasks Laundry[]
+}
+
+model Complaint {
+  id               String            @id @default(uuid())
+  studentId        String
+  student          Student           @relation(fields: [studentId], references: [id])
+  roomId           String
+  room             Room              @relation(fields: [roomId], references: [id])
+  category         ComplaintCategory
+  priority         Priority          @default(MEDIUM)
+  status           ComplaintStatus   @default(OPEN)
+  title            String
+  description      String
+  aiSummary        String?
+  assignedWardenId String?
+  assignedWarden   Warden?           @relation("WardenAssignments", fields: [assignedWardenId], references: [id])
+  assignedStaffId  String?
+  assignedStaff    Staff?            @relation("StaffAssignments", fields: [assignedStaffId], references: [id])
+  images           ComplaintImage[]
+  resolvedAt       DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([status])
+  @@index([priority])
+}
+
+model ComplaintImage {
+  id          String    @id @default(uuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  url         String
+  uploadedBy  String
+  createdAt   DateTime  @default(now())
+}
+
+model Visitor {
+  id           String        @id @default(uuid())
+  studentId    String
+  student      Student       @relation(fields: [studentId], references: [id])
+  visitorName  String
+  relation     String
+  phone        String
+  visitDate    DateTime
+  purpose      String
+  status       VisitorStatus @default(PENDING)
+  approvedById String?
+  createdAt    DateTime      @default(now())
+}
+
+model Laundry {
+  id        String        @id @default(uuid())
+  studentId String
+  student   Student       @relation(fields: [studentId], references: [id])
+  staffId   String?
+  staff     Staff?        @relation(fields: [staffId], references: [id])
+  slot      DateTime
+  itemCount Int
+  status    LaundryStatus @default(BOOKED)
+  createdAt DateTime      @default(now())
+}
+
+model Attendance {
+  id         String           @id @default(uuid())
+  studentId  String
+  student    Student          @relation(fields: [studentId], references: [id])
+  date       DateTime
+  status     AttendanceStatus
+  markedById String
+
+  @@unique([studentId, date])
+  @@index([date])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  studentId  String
+  student    Student       @relation(fields: [studentId], references: [id])
+  amount     Decimal
+  type       PaymentType
+  status     PaymentStatus @default(PENDING)
+  dueDate    DateTime
+  paidDate   DateTime?
+  receiptUrl String?
+  createdAt  DateTime      @default(now())
+
+  @@index([status])
+}
+
+model Notice {
+  id         String    @id @default(uuid())
+  title      String
+  body       String
+  audience   Role[]
+  postedById String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

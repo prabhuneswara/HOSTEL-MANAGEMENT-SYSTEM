@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #FAFAF9;
+    --bg-card: #FFFFFF;
+    --border-main: #E5E4E1;
+    --text-primary: #292826;
+    --text-muted: #7A7873;
+    --accent-sage: #8FB8A8;
+  }
+
+  .dark {
+    --bg-main: #1C1C1E;
+    --bg-card: #26262A;
+    --border-main: #38383C;
+    --text-primary: #EDEDEC;
+    --text-muted: #9C9C98;
+    --accent-sage: #8FB8A8;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    overflow-x: hidden;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Flat UI Cards & Hairline Borders */
+.flat-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+}
+
+.flat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease;
+}
+
+.flat-card-hover:hover {
+  border-color: #8FB8A8;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 120, 115, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 120, 115, 0.4);
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
